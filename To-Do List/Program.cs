@@ -1,4 +1,7 @@
 
+using Microsoft.EntityFrameworkCore;
+using To_Do_List.Models;
+
 namespace To_Do_List
 {
     public class Program
@@ -13,6 +16,9 @@ namespace To_Do_List
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+
+            builder.Services.AddDbContext<APIDBContect>(options =>
+            options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreConnection")));
 
             var app = builder.Build();
 
