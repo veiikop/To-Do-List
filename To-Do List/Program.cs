@@ -1,6 +1,7 @@
 
 using Microsoft.EntityFrameworkCore;
 using To_Do_List.Models;
+using To_Do_List.Repositories;
 
 namespace To_Do_List
 {
@@ -20,6 +21,8 @@ namespace To_Do_List
             builder.Services.AddDbContext<APIDBContect>(options =>
             options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreConnection")));
 
+            builder.Services.AddScoped<ITodoListRepository, TodoListRepository>();
+            builder.Services.AddScoped<ITodoItemRepository, TodoItemRepository>();
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
