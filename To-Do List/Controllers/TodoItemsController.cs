@@ -26,7 +26,11 @@ namespace To_Do_List.Controllers
         {
             var item = _service.GetById(id);
             if (item == null)
-                throw new KeyNotFoundException("Задача не найдена");
+                return NotFound(
+                    new {
+                        Success = false,
+                        ErrorMessage = "Задача не найдена" 
+                    });
 
             return Ok(item);
         }
@@ -48,7 +52,8 @@ namespace To_Do_List.Controllers
         public ActionResult<TodoItemDTO> Update(int id, [FromBody] UpdateTodoItemDTO dto)
         {
             var updated = _service.Update(id, dto);
-            if (updated == null) throw new KeyNotFoundException("Задача не найдена");
+            if (updated == null)
+                return NotFound(new { Success = false, ErrorMessage = "Задача не найдена" });
             return Ok(updated);
         }
 
@@ -56,7 +61,8 @@ namespace To_Do_List.Controllers
         public ActionResult Delete(int id)
         {
             var result = _service.Delete(id);
-            if (!result) throw new KeyNotFoundException("Задача не найдена");
+            if (!result)
+                return NotFound(new { Success = false, ErrorMessage = "Задача не найдена" });
             return NoContent();
         }
     }

@@ -66,13 +66,9 @@ namespace To_Do_List.Services
             _mapper.Map(dto, existing);
 
             if (dto.IsCompleted == true && !existing.IsCompleted)
-            {
                 existing.CompletedAt = DateTime.UtcNow;
-            }
             else if (dto.IsCompleted == false && existing.IsCompleted)
-            {
                 existing.CompletedAt = null;
-            }
 
             var updated = _repository.Update(existing);
             return _mapper.Map<TodoItemDTO>(updated);

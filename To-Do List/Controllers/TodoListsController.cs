@@ -26,8 +26,7 @@ namespace To_Do_List.Controllers
         {
             var list = _service.GetById(id);
             if (list == null)
-                throw new KeyNotFoundException("Список не найден");
-
+                return NotFound(new { Success = false, ErrorMessage = "Список не найден" });
             return Ok(list);
         }
 
@@ -42,7 +41,8 @@ namespace To_Do_List.Controllers
         public ActionResult<TodoListDTO> Update(int id, [FromBody] CreateTodoListDTO dto)
         {
             var updated = _service.Update(id, dto);
-            if (updated == null) throw new KeyNotFoundException("Список не найден");
+            if (updated == null)
+                return NotFound(new { Success = false, ErrorMessage = "Список не найден" });
             return Ok(updated);
         }
 
@@ -50,7 +50,8 @@ namespace To_Do_List.Controllers
         public ActionResult Delete(int id)
         {
             var result = _service.Delete(id);
-            if (!result) throw new KeyNotFoundException("Список не найден");
+            if (!result)
+                return NotFound(new { Success = false, ErrorMessage = "Список не найден" });
             return NoContent();
         }
     }

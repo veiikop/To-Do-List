@@ -24,6 +24,13 @@ namespace To_Do_List.Mappings
                 .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
                 .ForMember(dest => dest.CompletedAt, opt => opt.Ignore())
                 .ForMember(dest => dest.TodoList, opt => opt.Ignore());
+
+            CreateMap<UpdateTodoItemDTO, TodoItem>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.CompletedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.TodoList, opt => opt.Ignore())
+                ;
         }
     }
 }
