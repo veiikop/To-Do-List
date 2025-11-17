@@ -39,6 +39,8 @@ namespace To_Do_List.Services
         /// </summary>
         public IEnumerable<TodoItemDTO> GetItemsByListId(int todoListId)
         {
+            if (!_todoListRepository.Exists(todoListId))
+                throw new KeyNotFoundException("Список не найден");
             return _mapper.Map<IEnumerable<TodoItemDTO>>(_repository.GetItemsByListId(todoListId));
         }
 

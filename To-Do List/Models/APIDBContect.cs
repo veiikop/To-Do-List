@@ -8,6 +8,7 @@ namespace To_Do_List.Models
     {
         public DbSet<TodoList> TodoLists { get; set; }
         public DbSet<TodoItem> TodoItems { get; set; }
+        public DbSet<User> Users { get; set; } // добавляем users
 
         public APIDBContect(DbContextOptions<APIDBContect> options)
             : base(options) { }

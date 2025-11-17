@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using To_Do_List.Models.DTO;
 using To_Do_List.Services;
 
 namespace To_Do_List.Controllers
 {
     [Route("api/[controller]")]
+    [Authorize]
     [ApiController]
     public class TodoItemsController : ControllerBase
     {
@@ -36,9 +38,19 @@ namespace To_Do_List.Controllers
         }
 
         [HttpGet("by-list/{todoListId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public ActionResult<IEnumerable<TodoItemDTO>> GetItemsByListId(int todoListId)
         {
-            return Ok(_service.GetItemsByListId(todoListId));
+            try
+            {
+                var items = _service.GetItemsByListId(todoListId);
+                return Ok(items);
+            }
+            catch (KeyNotFoundException)
+            {
+                throw; 
+            }
         }
 
         [HttpPost]

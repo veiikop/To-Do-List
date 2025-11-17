@@ -1,4 +1,4 @@
-﻿    using System.Net;
+﻿using System.Net;
 using System.Text.Json;
 
 namespace To_Do_List.Middleware
@@ -48,6 +48,11 @@ namespace To_Do_List.Middleware
             {
                 statusCode = HttpStatusCode.BadRequest;
                 response = new { Success = false, ErrorMessage = exception.Message };
+            }
+            else if (exception is UnauthorizedAccessException)
+            {
+                statusCode = HttpStatusCode.Unauthorized;
+                response = new { Success = false, ErrorMessage = "Доступ запрещен" };
             }
 
             context.Response.StatusCode = (int)statusCode;

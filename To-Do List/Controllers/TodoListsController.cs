@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using To_Do_List.Models.DTO;
 using To_Do_List.Services;
 
 namespace To_Do_List.Controllers
 {
     [Route("api/[controller]")]
+    [Authorize]
     [ApiController]
     public class TodoListsController : ControllerBase
     {
