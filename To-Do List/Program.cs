@@ -58,7 +58,9 @@ namespace To_Do_List
 
             builder.Services.AddDbContext<APIDBContect>(options =>
             options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreConnection")));
-            
+
+            builder.Services.AddHttpContextAccessor();
+
             // Репозитории
             builder.Services.AddScoped<ITodoListRepository, TodoListRepository>();
             builder.Services.AddScoped<ITodoItemRepository, TodoItemRepository>();
@@ -90,10 +92,11 @@ namespace To_Do_List
 
             app.UseHttpsRedirection();
 
+            app.UseAuthentication();   
+            app.UseAuthorization();
+
             // Middleware для ошибок
             app.UseMiddleware<GlobalExceptionMiddleware>();
-
-            app.UseAuthorization();
 
             app.MapControllers();
 

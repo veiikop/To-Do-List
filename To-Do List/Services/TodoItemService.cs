@@ -2,6 +2,7 @@
 using To_Do_List.Models;
 using To_Do_List.Models.DTO;
 using To_Do_List.Repositories;
+using System.Security.Claims;
 
 namespace To_Do_List.Services
 {
@@ -10,19 +11,41 @@ namespace To_Do_List.Services
         private readonly ITodoItemRepository _repository;
         private readonly ITodoListRepository _todoListRepository;
         private readonly IMapper _mapper;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public TodoItemService(ITodoItemRepository repository, ITodoListRepository todoListRepository, IMapper mapper)
+        public TodoItemService(
+            ITodoItemRepository repository,
+            ITodoListRepository todoListRepository,
+            IMapper mapper,
+            IHttpContextAccessor httpContextAccessor)
         {
             _repository = repository;
             _todoListRepository = todoListRepository;
             _mapper = mapper;
+            _httpContextAccessor = httpContextAccessor;
         }
+
+        private int CurrentUserId => int.Parse(
+            _httpContextAccessor.HttpContext!.User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+        private string CurrentUserRole =>
+            _httpContextAccessor.HttpContext!.User.FindFirst(ClaimTypes.Role)?.Value ?? "User";
+
+        private bool IsAdmin => CurrentUserRole == "Admin";
+
         /// <summary>
-        /// Получить все задачи
+        /// Получить все задачи (Admin — все, User — только свои)
         /// </summary>
         public IEnumerable<TodoItemDTO> GetAll()
         {
-            return _mapper.Map<IEnumerable<TodoItemDTO>>(_repository.GetAll());
+            var query = _repository.GetAll();
+
+            if (!IsAdmin)
+            {
+                query = query.Where(i => i.TodoList.UserId == CurrentUserId);
+            }
+
+            return _mapper.Map<IEnumerable<TodoItemDTO>>(query.ToList());
         }
 
         /// <summary>
@@ -30,18 +53,28 @@ namespace To_Do_List.Services
         /// </summary>
         public TodoItemDTO? GetById(int id)
         {
-            var item = _repository.GetById(id);
-            return item == null ? null : _mapper.Map<TodoItemDTO>(item);
+            var item = _repository.GetById(id)
+                       ?? throw new KeyNotFoundException("Задача не найдена");
+
+            if (!IsAdmin && item.TodoList.UserId != CurrentUserId)
+                throw new UnauthorizedAccessException("Доступ к чужой задаче запрещён");
+
+            return _mapper.Map<TodoItemDTO>(item);
         }
 
         /// <summary>
-        /// Получить все задачи из списка
+        /// Получить задачи из конкретного списка
         /// </summary>
         public IEnumerable<TodoItemDTO> GetItemsByListId(int todoListId)
         {
-            if (!_todoListRepository.Exists(todoListId))
-                throw new KeyNotFoundException("Список не найден");
-            return _mapper.Map<IEnumerable<TodoItemDTO>>(_repository.GetItemsByListId(todoListId));
+            var todoList = _todoListRepository.GetById(todoListId)
+                           ?? throw new KeyNotFoundException("Список не найден");
+
+            if (!IsAdmin && todoList.UserId != CurrentUserId)
+                throw new UnauthorizedAccessException("Доступ к чужому списку запрещён");
+
+            var items = _repository.GetItemsByListId(todoListId);
+            return _mapper.Map<IEnumerable<TodoItemDTO>>(items);
         }
 
         /// <summary>
@@ -49,12 +82,17 @@ namespace To_Do_List.Services
         /// </summary>
         public TodoItemDTO Create(CreateTodoItemDTO dto)
         {
-            if (!_todoListRepository.Exists(dto.TodoListId))
-                throw new KeyNotFoundException("Список не найден");
+            var todoList = _todoListRepository.GetById(dto.TodoListId)
+                           ?? throw new KeyNotFoundException("Список не найден");
+
+            if (!IsAdmin && todoList.UserId != CurrentUserId)
+                throw new UnauthorizedAccessException("Нельзя добавлять задачи в чужой список");
 
             var item = _mapper.Map<TodoItem>(dto);
             item.CreatedAt = DateTime.UtcNow;
-            return _mapper.Map<TodoItemDTO>(_repository.Create(item));
+
+            var created = _repository.Create(item);
+            return _mapper.Map<TodoItemDTO>(created);
         }
 
         /// <summary>
@@ -62,8 +100,11 @@ namespace To_Do_List.Services
         /// </summary>
         public TodoItemDTO? Update(int id, UpdateTodoItemDTO dto)
         {
-            var existing = _repository.GetById(id);
-            if (existing == null) return null;
+            var existing = _repository.GetById(id)
+                           ?? throw new KeyNotFoundException("Задача не найдена");
+
+            if (!IsAdmin && existing.TodoList.UserId != CurrentUserId)
+                throw new UnauthorizedAccessException("Нельзя редактировать чужую задачу");
 
             _mapper.Map(dto, existing);
 
@@ -81,6 +122,12 @@ namespace To_Do_List.Services
         /// </summary>
         public bool Delete(int id)
         {
+            var item = _repository.GetById(id);
+            if (item == null) return false;
+
+            if (!IsAdmin && item.TodoList.UserId != CurrentUserId)
+                throw new UnauthorizedAccessException("Нельзя удалять чужую задачу");
+
             return _repository.Delete(id);
         }
     }

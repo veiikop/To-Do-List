@@ -28,6 +28,10 @@ namespace To_Do_List.Repositories
             _context.SaveChanges();
             return user;
         }
+        public IEnumerable<User> GetAll()
+        {
+            return _context.Users.ToList();
+        }
 
         public bool ExistsByEmail(string email)
         {

@@ -23,6 +23,7 @@ namespace To_Do_List.Models
         public string PasswordHash { get; set; } = string.Empty;
 
         public string Role { get; set; } = "User";
+        public ICollection<TodoList> TodoLists { get; set; } = new List<TodoList>();
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }

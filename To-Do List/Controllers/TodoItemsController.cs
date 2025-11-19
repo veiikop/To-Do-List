@@ -17,42 +17,41 @@ namespace To_Do_List.Controllers
             _service = service;
         }
 
+        /// <summary>
+        /// Получить все задачи (User — свои, Admin — все)
+        /// </summary>
         [HttpGet]
-        public ActionResult<IEnumerable<TodoItemDTO>> GetAll()                                 
+        public ActionResult<IEnumerable<TodoItemDTO>> GetAll()
         {
             return Ok(_service.GetAll());
         }
 
+        /// <summary>
+        /// Получить задачу по ID
+        /// </summary>
         [HttpGet("{id}")]
         public ActionResult<TodoItemDTO> GetById(int id)
         {
             var item = _service.GetById(id);
             if (item == null)
-                return NotFound(
-                    new {
-                        Success = false,
-                        ErrorMessage = "Задача не найдена" 
-                    });
+                return NotFound(new { Success = false, ErrorMessage = "Задача не найдена" });
 
             return Ok(item);
         }
 
+        /// <summary>
+        /// Получить задачи из конкретного списка
+        /// </summary>
         [HttpGet("by-list/{todoListId}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public ActionResult<IEnumerable<TodoItemDTO>> GetItemsByListId(int todoListId)
         {
-            try
-            {
-                var items = _service.GetItemsByListId(todoListId);
-                return Ok(items);
-            }
-            catch (KeyNotFoundException)
-            {
-                throw; 
-            }
+            var items = _service.GetItemsByListId(todoListId);
+            return Ok(items);
         }
 
+        /// <summary>
+        /// Создать новую задачу
+        /// </summary>
         [HttpPost]
         public ActionResult<TodoItemDTO> Create([FromBody] CreateTodoItemDTO dto)
         {
@@ -60,21 +59,29 @@ namespace To_Do_List.Controllers
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
+        /// <summary>
+        /// Обновить задачу
+        /// </summary>
         [HttpPut("{id}")]
         public ActionResult<TodoItemDTO> Update(int id, [FromBody] UpdateTodoItemDTO dto)
         {
             var updated = _service.Update(id, dto);
             if (updated == null)
                 return NotFound(new { Success = false, ErrorMessage = "Задача не найдена" });
+
             return Ok(updated);
         }
 
+        /// <summary>
+        /// Удалить задачу
+        /// </summary>
         [HttpDelete("{id}")]
         public ActionResult Delete(int id)
         {
             var result = _service.Delete(id);
             if (!result)
                 return NotFound(new { Success = false, ErrorMessage = "Задача не найдена" });
+
             return NoContent();
         }
     }
