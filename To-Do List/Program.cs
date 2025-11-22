@@ -76,7 +76,7 @@ namespace To_Do_List
             {
                 var configuration = new MapperConfiguration(cfg =>
                 {
-                    cfg.AddProfile<MappingProfile>(); 
+                    cfg.AddProfile<MappingProfile>();
                 }, factory);
                 return configuration.CreateMapper();
             });
@@ -92,7 +92,7 @@ namespace To_Do_List
 
             app.UseHttpsRedirection();
 
-            app.UseAuthentication();   
+            app.UseAuthentication();
             app.UseAuthorization();
 
             // Middleware для ошибок
