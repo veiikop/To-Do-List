@@ -45,11 +45,18 @@ namespace To_Do_List.Services
                 }
 
                 var token = GenerateJwtToken(user);
+                var refreshToken = GenerateRefreshToken();
+
+                // Сохраняем refresh token в базу
+                user.RefreshToken = refreshToken;
+                user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(_jwtSettings.RefreshExpirateAtInDays);
+                _userRepository.Update(user); // Нужно добавить метод Update в IUserRepository
 
                 return new AuthResponseDTO
                 {
                     Success = true,
                     Token = token,
+                    RefreshToken = refreshToken, // Добавляем refresh token
                     ValidTo = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpirateAtInMinutes),
                     User = new UserDTO
                     {
@@ -74,7 +81,6 @@ namespace To_Do_List.Services
         {
             try
             {
-                // проверяем уникальность email и username
                 if (_userRepository.ExistsByEmail(registerRequest.Email))
                 {
                     return new AuthResponseDTO
@@ -93,7 +99,6 @@ namespace To_Do_List.Services
                     };
                 }
 
-                // создаем нового пользователя
                 var newUser = new User
                 {
                     Username = registerRequest.Username,
@@ -105,11 +110,18 @@ namespace To_Do_List.Services
 
                 var createdUser = _userRepository.Create(newUser);
                 var token = GenerateJwtToken(createdUser);
+                var refreshToken = GenerateRefreshToken();
+
+                // Сохраняем refresh token
+                createdUser.RefreshToken = refreshToken;
+                createdUser.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7); 
+                _userRepository.Update(createdUser);
 
                 return new AuthResponseDTO
                 {
                     Success = true,
                     Token = token,
+                    RefreshToken = refreshToken, // Добавляем refresh token
                     ValidTo = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpirateAtInMinutes),
                     User = new UserDTO
                     {
@@ -196,6 +208,124 @@ namespace To_Do_List.Services
         private bool VerifyPassword(string password, string passwordHash)
         {
             return HashPassword(password) == passwordHash;
+        }
+        // Метод для генерации refresh token
+        private string GenerateRefreshToken()
+        {
+            var randomNumber = new byte[64];
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(randomNumber);
+            return Convert.ToBase64String(randomNumber);
+        }
+
+        // Метод для обновления токенов
+        public AuthResponseDTO RefreshToken(string token, string refreshToken)
+        {
+            try
+            {
+                var principal = GetPrincipalFromExpiredToken(token);
+                var userId = int.Parse(principal.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+                var user = _userRepository.GetById(userId);
+                if (user == null)
+                {
+                    return new AuthResponseDTO
+                    {
+                        Success = false,
+                        ErrorMessage = "Пользователь не найден"
+                    };
+                }
+
+                if (user.RefreshToken != refreshToken)
+                {
+                    return new AuthResponseDTO
+                    {
+                        Success = false,
+                        ErrorMessage = "Неверный refresh token"
+                    };
+                }
+
+                if (user.RefreshTokenExpiry <= DateTime.UtcNow)
+                {
+                    return new AuthResponseDTO
+                    {
+                        Success = false,
+                        ErrorMessage = "Refresh token истек"
+                    };
+                }
+
+                var newToken = GenerateJwtToken(user);
+                var newRefreshToken = GenerateRefreshToken();
+
+                user.RefreshToken = newRefreshToken;
+                user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
+                _userRepository.Update(user);
+
+                return new AuthResponseDTO
+                {
+                    Success = true,
+                    Token = newToken,
+                    RefreshToken = newRefreshToken,
+                    ValidTo = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpirateAtInMinutes),
+                    User = new UserDTO
+                    {
+                        Id = user.Id,
+                        Username = user.Username,
+                        Email = user.Email,
+                        Role = user.Role
+                    }
+                };
+            }
+            catch (SecurityTokenException ex)
+            {
+                return new AuthResponseDTO
+                {
+                    Success = false,
+                    ErrorMessage = $"Неверный токен: {ex.Message}"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new AuthResponseDTO
+                {
+                    Success = false,
+                    ErrorMessage = $"Ошибка при обновлении токена: {ex.Message}"
+                };
+            }
+        }
+
+        private ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
+        {
+            try
+            {
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var key = Encoding.ASCII.GetBytes(_jwtSettings.SecretKey);
+
+                var tokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateAudience = true,
+                    ValidAudience = _jwtSettings.Audience,
+                    ValidateIssuer = true,
+                    ValidIssuer = _jwtSettings.Issuer,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateLifetime = false // отключаем проверку срока действия
+                };
+
+                var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
+
+                if (securityToken is not JwtSecurityToken jwtSecurityToken ||
+                    !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    throw new SecurityTokenException("Invalid token");
+                }
+
+                return principal;
+            }
+            catch (Exception ex)
+            {
+                throw new SecurityTokenException($"Token validation failed: {ex.Message}");
+            }
         }
     }
 }

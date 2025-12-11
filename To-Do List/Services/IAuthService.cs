@@ -6,6 +6,7 @@ namespace To_Do_List.Services
     {
         AuthResponseDTO Login(LoginRequestDTO loginRequest);
         AuthResponseDTO Register(RegisterRequestDTO registerRequest);
+        AuthResponseDTO RefreshToken(string token, string refreshToken); 
         bool ValidateToken(string token);
     }
 }

@@ -97,5 +97,35 @@ namespace To_Do_List.Controllers
                 });
             }
         }
+
+        /// <summary>
+        /// Обновление токена
+        /// </summary>
+        [HttpPost("refresh")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public ActionResult<AuthResponseDTO> Refresh([FromBody] RefreshTokenRequestDTO request)
+        {
+            try
+            {
+                var result = _authService.RefreshToken(request.Token, request.RefreshToken);
+
+                if (!result.Success)
+                {
+                    return Unauthorized(result);
+                }
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при обновлении токена");
+                return StatusCode(500, new AuthResponseDTO
+                {
+                    Success = false,
+                    ErrorMessage = "Внутренняя ошибка сервера"
+                });
+            }
+        }
     }
 }

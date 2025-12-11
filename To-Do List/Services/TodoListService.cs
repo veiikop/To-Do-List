@@ -34,7 +34,7 @@ namespace To_Do_List.Services
         public IEnumerable<TodoListDTO> GetAll()
         {
             var role = GetCurrentRole();
-            var query = _repository.GetAll(); // уже с Include(Items
+            var query = _repository.GetAll();
 
             if (role != "Admin")
             {
